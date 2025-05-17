@@ -17,4 +17,12 @@
 # open html page in browser
 
 
+# RPI Device- Single Inference
+
+1. pip install requests pillow
+2. python infer_image.py path/to/your.jpg \
+  --instruction "What’s in this picture?" \
+  --api-url http://127.0.0.1:8080/v1/chat/completions
+
+
 ```
