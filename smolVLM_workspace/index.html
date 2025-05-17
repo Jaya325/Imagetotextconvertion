@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmolVLM Webcam Demo with Inference Timing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        video, canvas {
+            width: 640px;
+            max-width: 100%;
+            border: 1px solid #000;
+        }
+        textarea {
+            width: 640px;
+            max-width: 100%;
+            height: 150px;
+            margin-top: 10px;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #timingDisplay, #perInferenceTiming {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #333;
+        }
+        #inferenceTimesText {
+            height: 100px;
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>SmolVLM Webcam Demo with Inference Timing</h1>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <textarea id="responseText" readonly></textarea>
+    <div>
+        <label>Interval between requests: </label>
+        <select id="intervalSelect">
+            <option value="100">100ms</option>
+            <option value="250">250ms</option>
+            <option value="500">500ms</option>
+            <option value="5000" selected>5000ms</option>
+        </select>
+    </div>
+    <div>
+        <label>Base API: </label>
+        <input id="apiUrl" type="text" value="http://127.0.0.1:8080/v1/chat/completions" style="width: 300px;">
+    </div>
+    <div>
+        <label>Instruction: </label>
+        <textarea id="instruction" rows="2" style="width: 300px;">Describe what you see in the image.</textarea>
+    </div>
+    <button onclick="startCamera()">Start</button>
+    <div id="timingDisplay">Average Inference Time: 0 ms (0 requests)</div>
+    <div id="perInferenceTiming">Per-Inference Times (Image ID):</div>
+    <textarea id="inferenceTimesText" readonly></textarea>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const responseText = document.getElementById('responseText');
+        const intervalSelect = document.getElementById('intervalSelect');
+        const apiUrl = document.getElementById('apiUrl');
+        const instruction = document.getElementById('instruction');
+        const timingDisplay = document.getElementById('timingDisplay');
+        const inferenceTimesText = document.getElementById('inferenceTimesText');
+        let stream = null;
+        let isProcessing = false;
+        let intervalId = null;
+        let inferenceTimes = [];
+        let requestCount = 0;
+        let imageId = 0;
+        let lastStartTime = null;
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                responseText.value = "Camera started. Ready to process.";
+                inferenceTimesText.value = "";
+                isProcessing = true;
+                imageId = 0;
+                lastStartTime = null;
+                const interval = parseInt(intervalSelect.value);
+                intervalId = setInterval(sendData, interval);
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                responseText.value = `Error accessing camera: ${err.name} - ${err.message}. Please ensure permissions are granted and you are on HTTPS or localhost.`;
+                alert(`Error accessing camera: ${err.name}. Make sure you've granted permission and are on HTTPS or localhost.`);
+            }
+        }
+
+        function captureImage() {
+            if (!stream || !video.videoWidth) {
+                console.warn("Video stream not ready for capture.");
+                return null;
+            }
+            canvas.width = 640;
+            canvas.height = 480;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', 0.8);
+        }
+
+        async function sendData() {
+            if (!isProcessing) return;
+            const imageData = captureImage();
+            if (!imageData) return;
+
+            imageId++;
+            const startTime = performance.now();
+            try {
+                const payload = {
+                    model: "smolvlm",
+                    messages: [
+                        {
+                            role: "user",
+                            content: [
+                                { type: "text", text: instruction.value },
+                                { type: "image_url", image_url: { url: imageData } }
+                            ]
+                        }
+                    ],
+                    max_tokens: 100
+                };
+
+                console.log(`Request for Image ID ${imageId}: Image data length = ${imageData.length} bytes, Start Time = ${startTime.toFixed(2)} ms`);
+                const response = await fetch(apiUrl.value, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const endTime = performance.now();
+                const inferenceTime = endTime - startTime;
+
+                // Measure JSON parsing time separately
+                const parseStart = performance.now();
+                const data = await response.json();
+                const parseEnd = performance.now();
+                const parseTime = parseEnd - parseStart;
+
+                console.log(`Image ID ${imageId}: End Time = ${endTime.toFixed(2)} ms, Inference Time = ${inferenceTime.toFixed(2)} ms, JSON Parse Time = ${parseTime.toFixed(2)} ms`);
+
+                inferenceTimes.push(inferenceTime);
+                requestCount++;
+
+                // Calculate time since last inference
+                let sinceLast = 'N/A';
+                if (lastStartTime !== null) {
+                    sinceLast = (startTime - lastStartTime).toFixed(2);
+                }
+                lastStartTime = startTime;
+
+                if (response.ok && data.choices && data.choices.length > 0) {
+                    responseText.value = data.choices[0].message.content;
+                } else {
+                    responseText.value = `Server error: ${response.status} - ${data.error?.message || 'No response'}`;
+                }
+
+                // Update average timing display
+                const averageTime = inferenceTimes.reduce((a, b) => a + b, 0) / inferenceTimes.length;
+                timingDisplay.textContent = `Average Inference Time: ${averageTime.toFixed(2)} ms (${requestCount} requests)`;
+
+                // Update per-inference timing textarea
+                inferenceTimesText.value += `Image ID ${imageId}: Inference = ${inferenceTime.toFixed(2)} ms, Since Last = ${sinceLast} ms\n`;
+                inferenceTimesText.scrollTop = inferenceTimesText.scrollHeight;
+                console.log(`Image ID ${imageId}: Inference = ${inferenceTime.toFixed(2)} ms, Since Last = ${sinceLast} ms, Status: ${response.status}`);
+            } catch (err) {
+                console.error("Error sending data for Image ID", imageId, ":", err);
+                responseText.value = `Error: ${err.message}`;
+                inferenceTimesText.value += `Image ID ${imageId}: Failed (${err.message})\n`;
+                inferenceTimesText.scrollTop = inferenceTimesText.scrollHeight;
+                lastStartTime = startTime;
+            }
+        }
+
+        // Stop processing when page is closed
+        window.addEventListener('beforeunload', () => {
+            if (intervalId) clearInterval(intervalId);
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
