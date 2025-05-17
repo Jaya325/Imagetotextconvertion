@@ -9,10 +9,7 @@ import requests
 from PIL import Image
 
 def image_to_data_url(path: str, quality: int = 80) -> str:
-    """
-    Load an image from disk, re-encode as JPEG at given quality,
-    and return a data URL.
-    """
+    print(f"[DEBUG] loading image from {path!r}")
     with Image.open(path) as img:
         buf = BytesIO()
         img.convert("RGB").save(buf, format="JPEG", quality=quality)
@@ -26,8 +23,12 @@ def run_inference(
     model_name: str = "smolvlm",
     max_tokens: int = 100
 ):
-    # 1) Prepare payload
-    data_url = image_to_data_url(image_path)
+    try:
+        data_url = image_to_data_url(image_path)
+    except Exception as e:
+        print(f"[ERROR] could not open/encode image: {e}")
+        return
+
     payload = {
         "model": model_name,
         "messages": [
@@ -41,28 +42,44 @@ def run_inference(
         ],
         "max_tokens": max_tokens
     }
+
+    print(f"[DEBUG] sending POST to {api_url}")
+    print(f"[DEBUG] payload preview:\n  model = {model_name!r}\n  instruction = {instruction!r}\n  image_url length = {len(data_url)} chars")
     headers = {"Content-Type": "application/json"}
 
-    # 2) Send request and time it
-    t0 = time.time()
-    resp = requests.post(api_url, headers=headers, json=payload)
-    t1 = time.time()
+    try:
+        t0 = time.time()
+        resp = requests.post(api_url, headers=headers, json=payload, timeout=10)
+        t1 = time.time()
+    except Exception as e:
+        print(f"[ERROR] request failed: {e}")
+        return
 
-    # 3) Parse JSON and time it
+    print(f"[DEBUG] received HTTP {resp.status_code}")
+    print(f"[DEBUG] raw response text (first 500 chars):\n{resp.text[:500]!r}")
+
+    try:
+        resp.raise_for_status()
+    except Exception as e:
+        print(f"[ERROR] bad status: {e}")
+        return
+
     t2 = time.time()
-    resp.raise_for_status()
-    data = resp.json()
+    try:
+        data = resp.json()
+    except Exception as e:
+        print(f"[ERROR] failed to parse JSON: {e}")
+        return
     t3 = time.time()
 
-    # 4) Report
-    print(f"Inference + network: {(t1-t0)*1000:.2f} ms")
+    print(f"\nInference + network: {(t1-t0)*1000:.2f} ms")
     print(f"JSON parse:        {(t3-t2)*1000:.2f} ms")
     print("\nModel response:\n")
     print(json.dumps(data, indent=2, ensure_ascii=False))
 
 def main():
     p = argparse.ArgumentParser(
-        description="Run one SmolVLM inference on a local image file"
+        description="Run one SmolVLM inference on a local image file (DEBUG mode)"
     )
     p.add_argument("image", help="Path to an image file (jpeg/png/etc.)")
     p.add_argument(
@@ -88,6 +105,7 @@ def main():
     )
     args = p.parse_args()
 
+    print(f"[DEBUG] args = {args}")
     run_inference(
         args.image,
         args.instruction,
