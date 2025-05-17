@@ -2,6 +2,8 @@
 # Realtime VLM model
 
 # Start Server llama.cpp
+   -- command to run in terminal
+      ''' git clone https://github.com/ggerganov/llama.cpp.git '''
 1.chmod +x run_500m_server.sh
 2. ./run_500m_server.sh
 
