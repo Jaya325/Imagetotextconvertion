@@ -1,4 +1,4 @@
-```python
+```javascript
 # Realtime VLM model
 
 # Python client code for Inference and Benchmarking Live webcam
