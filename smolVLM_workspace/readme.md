@@ -6,12 +6,13 @@
 2. ./run_500m_server.sh
 
 
-
+# Client App 1
 # Python client code for Inference and Benchmarking Live webcam
 1. pip install opencv-python requests
 2. python smolvlm_inference_client.py --interval 5 --api_url http://127.0.0.1:8080/v1/chat/completions --instruction "Describe what you see in the image."
 
-
+# Client App 2
+# open html page in browser
 
 
 ```
