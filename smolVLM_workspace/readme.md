@@ -1,9 +1,11 @@
 ```javascript
 # Realtime VLM model
 
-# Start Server llama.cpp
+# Steps to install the server
    -- command to run in terminal
-      ''' git clone https://github.com/ggerganov/llama.cpp.git '''
+      ``` git clone https://github.com/ggerganov/llama.cpp.git ```
+
+# Start Server llama.cpp
 1.chmod +x run_500m_server.sh
 2. ./run_500m_server.sh
 
