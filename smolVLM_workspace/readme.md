@@ -30,10 +30,30 @@
 ```
 
 
-# for the installation of camera system in RPI
+# for the installation of camera system librery libcamera in RPI
 ```
 sudo apt update
 sudo apt install libcap-dev
 pip install picamera2 --break-system-packages
 ```
+- If the above commands does not work try the below method to install it
+  ```
+sudo apt update
+sudo apt install libevent-dev
+meson setup --reconfigure -Dcam=enabled build
+cd build
+ninja
+sudo ninja install
+```
+- The above commands build succesfully check the below command for cam version
+```
+ cam --version
+ ```
+  - If this works, you can proceed to use cam (e.g., cam --list to list cameras).
 
+
+
+
+
+
+  
