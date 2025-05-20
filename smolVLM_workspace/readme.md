@@ -28,3 +28,12 @@
 
 
 ```
+
+
+# for the installation of camera system in RPI
+```
+sudo apt update
+sudo apt install libcap-dev
+pip install picamera2 --break-system-packages
+```
+
