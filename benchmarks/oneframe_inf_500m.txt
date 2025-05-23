@@ -43,5 +43,47 @@ Response payload:
   }
 }
 
+
+
+#########################################################################320x240
+== API Response ==
+HTTP Status: 200
+Inference time: 18540.30 ms
+JSON parse time: 0.16 ms
+
+Response payload:
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": " A blue light is visible in the dark."
+      }
+    }
+  ],
+  "created": 1748036152,
+  "model": "smolvlm",
+  "system_fingerprint": "b5468-d13d0f61",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 10,
+    "prompt_tokens": 84,
+    "total_tokens": 94
+  },
+  "id": "chatcmpl-HcLsKo2yng1bem1t86MveZNzxgOa4wt6",
+  "timings": {
+    "prompt_n": 70,
+    "prompt_ms": 17216.369,
+    "prompt_per_token_ms": 245.94812857142855,
+    "prompt_per_second": 4.065897983483045,
+    "predicted_n": 10,
+    "predicted_ms": 1161.956,
+    "predicted_per_token_ms": 116.19559999999998,
+    "predicted_per_second": 8.6061778587141
+  }
+}
+
 ```
 
