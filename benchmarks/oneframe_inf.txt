@@ -1,1 +1,47 @@
+```javascript
+oneframe_inference.py  
+500m
+image 640, 480
+
+
+== API Response ==
+HTTP Status: 200
+Inference time: 19764.99 ms
+JSON parse time: 0.11 ms
+
+Response payload:
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": " A dark blue light is visible in the dark, but it is unclear what shape it is."
+      }
+    }
+  ],
+  "created": 1748035822,
+  "model": "smolvlm",
+  "system_fingerprint": "b5468-d13d0f61",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 20,
+    "prompt_tokens": 84,
+    "total_tokens": 104
+  },
+  "id": "chatcmpl-cTP6Zmv6EalroWiTU4WO6aXfpZngpfwg",
+  "timings": {
+    "prompt_n": 70,
+    "prompt_ms": 17218.364,
+    "prompt_per_token_ms": 245.9766285714286,
+    "prompt_per_second": 4.065426889569764,
+    "predicted_n": 20,
+    "predicted_ms": 2366.715,
+    "predicted_per_token_ms": 118.33575,
+    "predicted_per_second": 8.450531644072058
+  }
+}
+
+```
 
