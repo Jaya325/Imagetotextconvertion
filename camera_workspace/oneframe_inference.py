@@ -17,7 +17,7 @@ import requests
 def capture_image():
     picam2 = Picamera2()
     # configure for still capture at 640×480
-    cfg = picam2.create_still_configuration(main={"size": (640, 480)})
+    cfg = picam2.create_still_configuration(main={"size": (320, 240)})
     picam2.configure(cfg)
     picam2.start()
     # give camera a moment to adjust
